@@ -145,3 +145,114 @@ Anti-Forgery tokens are best practice for Asp.Net.
 * Different menu items are displayed depending on the Authentication state.
 
 ### Commit to Repo Base 00.02.00
+
+## Implement Interop to utilize cookies.
+The following steps are changes needed to gain access to the AF token, and POST a form to Login.
+
+### wwwroot/js/Interop.js
+Borrowed from the Oqtane project (https://www.oqtane.org/) and 
+Shaun Walker blog "Exploring Authentication in Blazor" (https://www.oqtane.org/Resources/Blog/PostId/527/exploring-authentication-in-blazor)
+
+Only interested in 2 routines:
+
+    ```
+    getElementByName: function (name) {
+        var elements = document.getElementsByName(name);
+        if (elements.length) {
+            return elements[0].value;
+        } else {
+            return "";
+        }
+    },
+    submitForm: async function (path, fields) {
+        const form = document.createElement('form');
+        form.method = 'post';
+        form.action = path;
+
+        for (const key in fields) {
+            if (fields.hasOwnProperty(key)) {
+                const hiddenField = document.createElement('input');
+                hiddenField.type = 'hidden';
+                hiddenField.name = key;
+                hiddenField.value = fields[key];
+                form.appendChild(hiddenField);
+            }
+        }
+
+        document.body.appendChild(form);
+        var response = await form.submit();
+    },
+    ```
+  * The `getElementByName` will be used to retrieve the AF token from the Document
+  * The `submitForm` will be used to dynamically build and submit a form via a POST call. 
+
+### Shared/Interop.cs
+This file is a C# wrapper for the Javascript methods in Interop.js.  
+Actual location is not hugely important, so it was placed in the Shared location.
+The only 2 wrappers that will be used are `GetElementByName()` and `SubmitForm()`  
+The full code is in the repo.
+
+### Pages/Host.cshtml
+* Add one call to embed the token in the client html
+    ```html
+    <body>
+        @(Html.AntiForgeryToken())
+        <app>
+    ```
+* Add the following line to load the *interop.js* file
+    ```html
+        <script src="_framework/blazor.server.js"></script>
+        <script src="~/js/Interop.js"></script>
+    </body>
+    </html>
+    ```
+
+### SignIn
+SignIn is the most difficult flow, so lets start there.  We will begin with supporting files.
+
+#### SignIn.razor
+* In Areas/Identity/Pages/Account, create SignIn.razor
+* Copy the source code from the repository
+
+#### Key elements
+    ```c#
+        protected override async Task OnAfterRenderAsync(bool firstRender)
+        {
+            if (firstRender)
+            {
+                var interop = new Interop(_jsruntime);
+                AntiForgeryToken = await interop.GetElementByName("__RequestVerificationToken");
+            }
+    ```
+  * The first time time the page is rendered, a call is made to retrieve the AF token which is embedded in element *__RequestVerificationToken**
+  * The result is stored in `AntiForgeryToken`
+  
+```
+        var fields = new
+        {
+            __RequestVerificationToken = AntiForgeryToken
+            , email = Input.Email,
+            password = Input.Password,
+            remember = Input.RememberMe,
+            returnurl = "/SignIn"
+        };
+        var interop = new Interop(_jsruntime);
+        await interop.SubmitForm("Identity/Account/Login", fields);
+        HttpResponseMessage response = new HttpResponseMessage();
+```
+* `fields` is an anonymous array of key values.
+* Notice has `AntiForgeryToken` is passed in.
+* A call is made to `SubmitForm()`
+  * Though this call is `await`ed, there is no reponse message.  So an empty one is created.
+* The Javascript method will POST the data to Login, where it will be processed the same as if it came from the Login View, as we did in our earlier login.
+
+### Test 
+* Launch the app
+* Click on the new ![B S I I B 010](BlazorServerIdentityInterop/wwwroot/images/BSII-B-010.PNG) menu item.
+* The new Sign In screen is displayed
+  > ![B S I I B 020](BlazorServerIdentityInterop/wwwroot/images/BSII-B-020.PNG)
+* Proceed to Sign In
+* If successful, the top line menu display will change.  
+* But this time the UI is all Blazor, and should proceed smoothly.
+
+### Commit to Repo Base 00.03.00

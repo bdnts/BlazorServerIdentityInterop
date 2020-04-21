@@ -1,0 +1,144 @@
+﻿@page "/SignIn"
+@using System.ComponentModel.DataAnnotations;
+@using Microsoft.AspNetCore.Identity;
+@using BlazorServerIdentityInterop.Areas.Identity.Data;
+@using Microsoft.AspNetCore.Antiforgery; 
+@using Microsoft.JSInterop; 
+
+@inject NavigationManager navman;
+@inject UserManager<BlazorServerIdentityInteropUser> _userManager
+@inject IJSRuntime _jsruntime;
+@inject IAntiforgery Xsrf;
+
+<h1 class="text-center">Sign In</h1>
+<div class="container text-center">
+    <EditForm Model="@Input" OnValidSubmit="@ValidSubmit" OnInvalidSubmit="@InvalidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+        <hr />
+        <div class="container px-1" style="width: 55%; margin-left: 75px;">
+            <div class="form-group row text-right ">
+                <div class="col">
+                    <label>
+                        Email Address
+                        <InputText @bind-Value="Input.Email" />
+                    </label>
+                </div>
+            </div>
+            <div class="form-group row text-right">
+                <div class="col">
+                    <label>
+                        Password
+                        <InputText type="password" @bind-Value="Input.Password" />
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div class="form-group row">
+            <div class="col">
+                <label>
+                    Remember Me?
+                    <InputCheckbox @bind-Value="Input.RememberMe" />
+                </label>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col text-right">
+                <button type="submit" class="btn btn-primary">Sign in</button>
+            </div>
+            <div class="col text-left">
+                <button type="button" class="btn btn-danger" @onclick="Cancel">Cancel</button>
+            </div>
+
+        </div>
+    </EditForm>
+</div>
+
+
+@code {
+    [CascadingParameter] public Task<AuthenticationState> authenticationStateTask { get; set; }
+    private string AntiForgeryToken { get; set; }
+
+
+    public class InputModel
+    {
+        [Required] // @using System.ComponentModel.DataAnnotations;
+        [EmailAddress]
+        public string Email { get; set; }
+
+        [Required]
+        [DataType(DataType.Password)]
+        public string Password { get; set; }
+
+        [Display(Name = "Remember me?")]
+        public bool RememberMe { get; set; }
+    }
+
+    InputModel Input = new InputModel();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            #region Interop
+            var interop = new Interop(_jsruntime);
+            AntiForgeryToken = await interop.GetElementByName("__RequestVerificationToken");
+            #endregion
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+        return;
+    }
+
+    public async void ValidSubmit()
+    {
+        #region Unsupported
+        // This does work, but is unsupported in Blazor
+        var user = await _userManager.FindByNameAsync(Input.Email);
+
+        if (user == null)
+        {
+            //ShowError(1);
+            return;
+        }
+
+        var result = await _userManager.CheckPasswordAsync(user, Input.Password);
+        if (!result)
+        {
+            //ShowError(11);
+            return;
+        }
+
+        //var resultSignIn = await _signInManager.PasswordSignInAsync(user, Input.Password, true, false);
+        #endregion
+
+        #region Interop
+        var fields = new
+        {
+            __RequestVerificationToken = AntiForgeryToken
+        , email = Input.Email,
+            password = Input.Password,
+            remember = Input.RememberMe,
+            returnurl = "/SignIn"
+        };
+        var interop = new Interop(_jsruntime);
+        await interop.SubmitForm("Identity/Account/Login", fields);
+        HttpResponseMessage response = new HttpResponseMessage();
+        #endregion
+
+        if (!response.IsSuccessStatusCode)
+        {
+            return;
+        }
+    }
+
+    public void InvalidSubmit()
+    {
+        return;
+    }
+
+    public void Cancel()
+    {
+        navman.NavigateTo("/");
+    }
+}

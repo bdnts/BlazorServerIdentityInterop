@@ -1,0 +1,21 @@
+﻿<AuthorizeView>
+    <NotAuthorized>
+        <NavLink class="nav-link" href="SignUp" Match="NavLinkMatch.All">
+            <span class="oi oi-person" aria-hidden="true"></span> Sign Up
+        </NavLink>
+        <NavLink class="nav-link" href="SignIn" Match="NavLinkMatch.All">
+            <span class="oi oi-account-login" aria-hidden="true"></span> Sign In
+        </NavLink>
+        <a href="Identity/Account/Register">Register</a>
+        <a href="Identity/Account/Login">Log in</a>
+    </NotAuthorized>
+    <Authorized>
+        <a href="Identity/Account/Manage">Hello, @context.User.Identity.Name!</a>
+        <NavLink class="nav-link" href="SignOut">
+            <span class="oi oi-account-logout" aria-hidden="true"></span> Sign Out
+        </NavLink>
+        <form method="post" action="Identity/Account/LogOut">
+            <button type="submit" class="nav-link btn btn-link">Log out</button>
+        </form>
+    </Authorized>
+</AuthorizeView>

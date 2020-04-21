@@ -256,3 +256,21 @@ SignIn is the most difficult flow, so lets start there.  We will begin with supp
 * But this time the UI is all Blazor, and should proceed smoothly.
 
 ### Commit to Repo Base 00.03.00
+
+## Sign Out
+The legacy Logout uses a POST call with no data.  
+Trouble is, it causes a `AntiForgeryValidationException`.
+We need to disable AF for the moment.
+
+### Logout.cshtml.cs
+* Add an `[IgnoreAntiForgeryToken]` attribute to the top of the class.
+    ```c#
+        [AllowAnonymous]
+        [IgnoreAntiforgeryToken]
+        public class LogoutModel : PageModel
+    ```
+
+### Test
+Run the app, Sign In, and then use the legacy Log Out.
+
+### Commit to Repo Base 00.03.01

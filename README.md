@@ -49,3 +49,99 @@ Anti-Forgery tokens are best practice for Asp.Net.
 * 
 ### Commit to repo Base 00.01.00
 
+## SUSISO Menu
+* Need to augment the menu for SUSISO  options and display current Authentication State.
+
+### App.razor
+* Add the tag `<CascadingAuthenticationState>` around everything
+```
+<CascadingAuthenticationState>
+    <Router AppAssembly="@typeof(Program).Assembly">
+        <Found Context="routeData">
+            <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+        </Found>
+        <NotFound>
+            <LayoutView Layout="@typeof(MainLayout)">
+                <p>Sorry, there's nothing at this address.</p>
+            </LayoutView>
+        </NotFound>
+    </Router>
+</CascadingAuthenticationState>
+```
+### LoginDisplay.razor
+* Create Blazor component *Shared/LoginDisplay.razor**
+* Paste in the following:
+```c#
+```
+### Navmenu.razor
+* Edit *MainLayout.razor* and add element *<LoginDisplay>*
+    ```c#
+    @inherits LayoutComponentBase
+
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+
+    <div class="main">
+        <div class="top-row px-4">
+            <LoginDisplay />
+            <a href="https://docs.microsoft.com/aspnet/" target="_blank">About</a>
+        </div>
+
+        <div class="content px-4">
+            @Body
+        </div>
+    </div>
+    ```
+### Startup.cs
+* Add `app.UseAuthentication();` and `app.UserAuthorization();`
+```c#
+    app.UseRouting();
+
+    app.UseAuthentication();
+    app.UseAuthorization();
+
+    app.UseEndpoints(endpoints =>
+```
+
+### Compile and Test
+* Clean up any issues
+* Should see a Hello World similar to this:
+  > ![B S I I A 010](BlazorServerIdentityInterop/wwwroot/images/BSII-A-010.PNG)
+* Sign Up and Sign In are highlighted because they will use new Blazor Components to be built.
+* The Register and Login are the Razor pages built by scaffolding.  We will keep them on the menu for the moment.
+* Stop application
+
+### Provision Database
+* Package Manager Console
+* `add-migration m1`
+
+    ```
+    PM> add-migration m1
+    Build started...
+    Build succeeded.
+    To undo this action, use Remove-Migration.
+    PM> 
+    ```
+* `update-database`
+  
+    ```
+    PM> update-database
+    Build started...
+    Build succeeded.
+    Done.
+    PM> 
+    ```
+### Retest
+* Launch app
+* Use the legacy Register Link
+* Register an account
+* Confirm the account by clicking *Click here to confirm your account*
+* Click on the Home link of the project name *BlazorServerIdentityInterop*
+* Click on the legacy  *Log in* link.
+* Proceed to Login
+* The menu will change to should the username used (email), and Sign Out & Log out display.
+  >![B S I I A 020](BlazorServerIdentityInterop/wwwroot/images/BSII-A-020.PNG) 
+* Different menu items are displayed depending on the Authentication state.
+
+### Commit to Repo Base 00.02.00

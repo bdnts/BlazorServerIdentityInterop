@@ -16,6 +16,7 @@
     <link href="css/site.css" rel="stylesheet" />
 </head>
 <body>
+    @(Html.AntiForgeryToken())
     <app>
         <component type="typeof(App)" render-mode="ServerPrerendered" />
     </app>
@@ -32,5 +33,7 @@
     </div>
 
     <script src="_framework/blazor.server.js"></script>
+    <script src="~/js/Interop.js"></script>
+
 </body>
 </html>

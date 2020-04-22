@@ -16,33 +16,39 @@
 @using Microsoft.AspNetCore.WebUtilities;
 @using Microsoft.Extensions.Logging;
 
+@inject SignInManager<BlazorServerIdentityInteropUser> _signInManager;
+@inject UserManager<BlazorServerIdentityInteropUser> _userManager;
+@inject IEmailSender _emailSender;
+@inject ILogger<SignUp> _logger;
+@inject NavigationManager _navman;
+
 
 <h1 class="text-center">Sign Up</h1>
 
 <div class="row">
     <div class="col-md-4">
-        <EditForm Model="@Input" OnValidSubmit="@ValidSubmit" OnInvalidSubmit="@InvalidSubmit">
+        <EditForm Model="Input" OnValidSubmit="@ValidSubmit" OnInvalidSubmit="@InvalidSubmit">
             <DataAnnotationsValidator />
             <ValidationSummary />
             <h4>Create a new account.</h4>
             <hr />
             <div class="form-group">
                 <label>
-                Email"
-                <InputText @bind-Value="Input.Email" />
-                    </label>
+                    Email"
+                    <InputText @bind-Value="Input.Email" />
+                </label>
             </div>
             <div class="form-group">
                 <label>
-                Password
-                <InputText type="password" @bind-Value="Input.Password" />
-                    </label>
+                    Password
+                    <InputText type="password" @bind-Value="Input.Password" />
+                </label>
             </div>
             <div class="form-group">
                 <label>
-                ConfirmPassword
-                <InputText type="password" @bind-Value="Input.ConfirmPassword"  />
-                    </label>
+                    ConfirmPassword
+                    <InputText type="password" @bind-Value="Input.ConfirmPassword" />
+                </label>
             </div>
             <button type="submit" class="btn btn-primary">Sign Up</button>
         </EditForm>
@@ -63,12 +69,12 @@
                 }
                 else
                 {
-                    <form id="external-account" asp-page="./ExternalLogin" asp-route-returnUrl="@Model.ReturnUrl" method="post" class="form-horizontal">
+                    <form id="external-account" asp-page="./ExternalLogin" asp-route-returnUrl="@ReturnUrl" method="post" class="form-horizontal">
                         <div>
                             <p>
                                 @foreach (var provider in ExternalLogins)
                                 {
-                                    <button type="submit" class="btn btn-primary" name="provider" value="@provider.Name" title="Log in @using your @provider.DisplayName account">@provider.DisplayName</button>
+                                    <button type="submit" class="btn btn-primary" name="provider" value="@provider.Name" title="Log in using your @provider.DisplayName account">@provider.DisplayName</button>
                                 }
                             </p>
                         </div>
@@ -79,39 +85,38 @@
     </div>
 </div>
 
+@if (showConfirmation)
+{
+    @if (!string.IsNullOrEmpty(EmailConfirmationUrl))
+    {
+        <br />
+        <p>
+            This app does not currently have a real email sender registered, see <a href="https://aka.ms/aspaccountconf">these docs</a> for how to configure a real email sender.
+            Normally this would be emailed: <a id="confirm-link" href="@EmailConfirmationUrl">Click here to confirm your account</a>
+        </p>
+    }
+    else
+    {
+        <p>
+            Please check your email to confirm your account.
+        </p>
+    }
+}
+
 @code
 {
-    private readonly SignInManager<BlazorServerIdentityInteropUser>
-_signInManager;
-    private readonly UserManager<BlazorServerIdentityInteropUser>
-        _userManager;
-    private readonly ILogger<RegisterModel>
-        _logger;
-    private readonly IEmailSender _emailSender;
 
-    public RegisterModel(
-    UserManager<BlazorServerIdentityInteropUser>
-        userManager,
-        SignInManager<BlazorServerIdentityInteropUser>
-            signInManager,
-            ILogger<RegisterModel>
-                logger,
-                IEmailSender emailSender)
-    {
-        _userManager = userManager;
-        _signInManager = signInManager;
-        _logger = logger;
-        _emailSender = emailSender;
-    }
-
-    [BindProperty]
-    public InputModel Input { get; set; }
+    public InputModel Input { get; set; } = new InputModel();
 
     public string ReturnUrl { get; set; }
 
-    public IList<AuthenticationScheme>
-        ExternalLogins
-    { get; set; }
+    public IList<AuthenticationScheme> ExternalLogins { get; set; }
+
+    // Is it time to show a confirmation
+    public bool showConfirmation { get; set; }
+
+    //String to hold the confirmation URL
+    public string EmailConfirmationUrl { get; set; }
 
     public class InputModel
     {
@@ -132,56 +137,54 @@ _signInManager;
         public string ConfirmPassword { get; set; }
     }
 
-    public async Task OnGetAsync(string returnUrl = null)
-    {
-        ReturnUrl = returnUrl;
-        ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
-    }
+    //Deprecate, no longer needed.
+    //public async Task OnGetAsync(string returnUrl = null)
+    //{
+    //    ReturnUrl = returnUrl;
+    //    ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
+    //}
 
-    public async Task<IActionResult>
-        OnPostAsync(string returnUrl = null)
+    /// <summary>
+    /// Technically, UserManager and SignInManager are not supported in Razor.
+    /// And SignInManager.SignInAsync definitely won't work.
+    /// But they seem to work the rest of the time.  Let's give them a chance
+    /// </summary>
+    public async void ValidSubmit()
     {
-        returnUrl = returnUrl ?? Url.Content("~/");
-        ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
-        if (ModelState.IsValid)
+        //This section is purely about signing up the user
+        var user = new BlazorServerIdentityInteropUser { UserName = Input.Email, Email = Input.Email };
+
+        // Actually writing the user details to database
+        var result = await _userManager.CreateAsync(user, Input.Password);
+
+        // If it failed generate error and exit
+        if (!result.Succeeded)
         {
-            var user = new BlazorServerIdentityInteropUser { UserName = Input.Email, Email = Input.Email };
-            var result = await _userManager.CreateAsync(user, Input.Password);
-            if (result.Succeeded)
-            {
-                _logger.LogInformation("User created a new account with password.");
-
-                var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-                code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
-                var callbackUrl = Url.Page(
-                "/Account/ConfirmEmail",
-                pageHandler: null,
-                values: new { area = "Identity", userId = user.Id, code = code },
-                protocol: Request.Scheme);
-
-                await _emailSender.SendEmailAsync(Input.Email, "Confirm your email",
-                $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
-
-                if (_userManager.Options.SignIn.RequireConfirmedAccount)
-                {
-                    return RedirectToPage("RegisterConfirmation", new { email = Input.Email });
-                }
-                else
-                {
-                    await _signInManager.SignInAsync(user, isPersistent: false);
-                    return LocalRedirect(returnUrl);
-                }
-            }
-            foreach (var error in result.Errors)
-            {
-                ModelState.AddModelError(string.Empty, error.Description);
-            }
+            // The <EditForm> is valid, but the transaction failed for some reason.
+            // This is NOT a form validation error. One common case is the user already exists, and results in a DB error.
+            // Will leave it at ValidationSummary for now and work applying EditContext later.
+            return;
         }
 
-        // If we got this far, something failed, redisplay form
-        return Page();
-    }
-}
-                                }
+        _logger.LogInformation("User created a new account with password.");
 
+        // Configuration is for a confirmed email before Sign In is allowed.
+        // Now set about mimicking sending a confirmation email
+
+        var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+        code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+
+        var queryparams = new Dictionary<string, string>()
+{
+                {"userid", user.Id },
+                { "code", code}
+            };
+        EmailConfirmationUrl = QueryHelpers.AddQueryString(_navman.BaseUri + "SignUpConfirmEmail", queryparams);
+        showConfirmation = true;
+    }
+
+    public void InvalidSubmit()
+    {
+        return;
+    }
 }

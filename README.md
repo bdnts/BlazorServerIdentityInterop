@@ -132,6 +132,19 @@ Anti-Forgery tokens are best practice for Asp.Net.
     Done.
     PM> 
     ```
+## Log Out
+The legacy Logout uses a POST call with no data.  
+Trouble is, it causes a `AntiForgeryValidationException`.
+We need to disable AF for the moment.
+
+### Logout.cshtml.cs
+* Add an `[IgnoreAntiForgeryToken]` attribute to the top of the class.
+    ```c#
+        [AllowAnonymous]
+        [IgnoreAntiforgeryToken]
+        public class LogoutModel : PageModel
+    ```
+
 ### Retest
 * Launch app
 * Use the legacy Register Link
@@ -257,20 +270,70 @@ SignIn is the most difficult flow, so lets start there.  We will begin with supp
 
 ### Commit to Repo Base 00.03.00
 
-## Sign Out
-The legacy Logout uses a POST call with no data.  
-Trouble is, it causes a `AntiForgeryValidationException`.
-We need to disable AF for the moment.
 
-### Logout.cshtml.cs
-* Add an `[IgnoreAntiForgeryToken]` attribute to the top of the class.
-    ```c#
-        [AllowAnonymous]
-        [IgnoreAntiforgeryToken]
-        public class LogoutModel : PageModel
+## Sign Out
+* Create a Blazor component called *SignOut.razor*
+* This is pretty much like *SignIn.razor*, except no UI, and call Logout instead.
+     ```c#
+    @page "/SignOut"
+
+    @using System.Threading.Tasks;
+    @using Microsoft.AspNetCore.Antiforgery;
+    @inject IJSRuntime _jsruntime;
+
+    @code {
+        //Will tell us if signed in or nor
+        [CascadingParameter] public Task<AuthenticationState> authenticationStateTask { get; set; }
+
+        // local property for the AF
+        private string AntiForgeryToken { get; set; }
+
+        // Execute after UI has rendered.  This allows it to fire once and only once.
+        protected override async Task OnAfterRenderAsync(bool firstRender)
+        {
+            var authState = await authenticationStateTask;
+
+            if (firstRender && authState.User.Identity.IsAuthenticated)
+            {
+                // Get the AF token
+                var interop = new Interop(_jsruntime);
+                AntiForgeryToken = await interop.GetElementByName("__RequestVerificationToken");
+
+                // Build a form list
+                var fields = new
+                {
+                    __RequestVerificationToken = AntiForgeryToken
+                    , returnurl = "/SignOut"
+                };
+
+                // Post the message
+                await interop.SubmitForm("Identity/Account/Logout", fields);
+            }
+
+            await base.OnAfterRenderAsync(firstRender);
+            return;
+        }
+    }
+
+    ```
+### Test
+* Use `Sign In`
+* Use `Sign Out`
+
+### Optional Put out a Message
+* Add a little text once Signed Out
+    ```
+    @inject IJSRuntime _jsruntime;
+
+    <AuthorizeView>
+        <NotAuthorized>
+            <h2 class="text-center">You are signed out</h2>
+        </NotAuthorized>
+    </AuthorizeView>
+
+    @code {
+
     ```
 
-### Test
-Run the app, Sign In, and then use the legacy Log Out.
-
 ### Commit to Repo Base 00.03.01
+

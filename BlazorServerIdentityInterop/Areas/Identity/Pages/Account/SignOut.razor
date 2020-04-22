@@ -1,0 +1,45 @@
+﻿@page "/SignOut"
+
+@using System.Threading.Tasks;
+@using Microsoft.AspNetCore.Antiforgery;
+@inject IJSRuntime _jsruntime;
+
+<AuthorizeView>
+    <NotAuthorized>
+        <h2 class="text-center">You are signed out</h2>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    //Will tell us if signed in or nor
+    [CascadingParameter] public Task<AuthenticationState> authenticationStateTask { get; set; }
+
+    // local property for the AF
+    private string AntiForgeryToken { get; set; }
+
+    // Execute after UI has rendered.  This allows it to fire once and only once.
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        var authState = await authenticationStateTask;
+
+        if (firstRender && authState.User.Identity.IsAuthenticated)
+        {
+            // Get the AF token
+            var interop = new Interop(_jsruntime);
+            AntiForgeryToken = await interop.GetElementByName("__RequestVerificationToken");
+
+            // Build a form list
+            var fields = new
+            {
+                __RequestVerificationToken = AntiForgeryToken
+                , returnurl = "/SignOut"
+            };
+
+            // Post the message
+            await interop.SubmitForm("Identity/Account/Logout", fields);
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+        return;
+    }
+}

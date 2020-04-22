@@ -420,3 +420,8 @@ Now that it is confirmed upon hitting this page, present SignIn so that they can
 * Some beautification
 * Added self-migrate for SqlIte
 * Updated all packages.
+
+### Commit Base 00.03.05
+* Put SignIn `<EditForm >` inside a '`<AuthorizeView>` so it is only displayed when unauthed.
+* Utilized EditContext to test and report server errors.  It is good, but after displaying an error, 
+it is stuck on the error.  Had to reset the EditContext inside `InvalidSubmit` sinc that seems to be the only thing active.

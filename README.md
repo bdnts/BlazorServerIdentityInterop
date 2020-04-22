@@ -352,3 +352,12 @@ This is the replacement for the Registration set of pages.
 ### Commit SignUp.razor
 For educational purpose, saved *SignUp.razor* in original state to see the transformation.
 
+### Converting to a Blazor Component
+* The general flow is to move blocks of code around and transform the form into an EditForm
+* Put a page name on
+* Moved all the libraries to the top
+* Surrounded the code into a @code{} block
+* Removed the namespace
+* Removed the PageModel
+* Commit
+

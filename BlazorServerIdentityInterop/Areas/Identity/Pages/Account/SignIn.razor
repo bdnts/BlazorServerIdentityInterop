@@ -46,11 +46,17 @@
                 </div>
                 <div class="row">
                     <div class="col text-right">
-                        <button type="submit" class="btn btn-primary">Sign in</button>
+                        <button type="submit" class="btn btn-primary" disabled="@isSubmitButtonDisabled">Sign in</button>
                     </div>
                     <div class="col text-left">
                         <button type="button" class="btn btn-danger" @onclick="Cancel">Cancel</button>
                     </div>
+                    @if (showClearErrors)
+                    {
+                        <div class="col text-left">
+                            <button type="button" class="btn btn-info" @onclick="ClearErrors">Clear Errors</button>
+                        </div>
+                    }
 
                 </div>
             </EditForm>
@@ -85,6 +91,10 @@
 
     private EditContext _editContext;
 
+    private bool isSubmitButtonDisabled { get; set;  }
+
+    private bool showClearErrors { get; set; }
+
     protected override void OnInitialized()
     {
         base.OnInitialized();
@@ -112,8 +122,12 @@
         if (!user)
         {
             // invalid user supplied;
+            showClearErrors = true;
+            isSubmitButtonDisabled = true;
             return;
         }
+
+
         #region Interop
         // This action never reports failure, so that is why it didn't go into ServerValidate.
         var fields = new
@@ -142,6 +156,13 @@
         return;
     }
 
+    public void ClearErrors()
+    {
+        _editContext = new EditContext(Input);
+        isSubmitButtonDisabled = false;
+        showClearErrors = false;
+
+    }
     public void Cancel()
     {
         navman.NavigateTo("/");

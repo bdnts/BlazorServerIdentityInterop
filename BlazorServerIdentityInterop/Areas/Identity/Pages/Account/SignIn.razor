@@ -2,8 +2,8 @@
 @using System.ComponentModel.DataAnnotations;
 @using Microsoft.AspNetCore.Identity;
 @using BlazorServerIdentityInterop.Areas.Identity.Data;
-@using Microsoft.AspNetCore.Antiforgery; 
-@using Microsoft.JSInterop; 
+@using Microsoft.AspNetCore.Antiforgery;
+@using Microsoft.JSInterop;
 
 @inject NavigationManager navman;
 @inject UserManager<BlazorServerIdentityInteropUser> _userManager
@@ -14,7 +14,7 @@
     <NotAuthorized Context="NotAuthed">
         <h1 class="text-center">Sign In</h1>
         <div class="container text-center">
-            <EditForm Model="Input" OnValidSubmit="@ValidSubmit" OnInvalidSubmit="@InvalidSubmit">
+            <EditForm EditContext="@_editContext" OnValidSubmit="@ValidSubmit" OnInvalidSubmit="@InvalidSubmit">
                 <DataAnnotationsValidator />
                 <ValidationSummary />
                 <hr />
@@ -81,7 +81,15 @@
         public bool RememberMe { get; set; }
     }
 
-    InputModel Input = new InputModel();
+    private InputModel Input = new InputModel();
+
+    private EditContext _editContext;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        _editContext = new EditContext(Input);
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -99,31 +107,20 @@
 
     public async void ValidSubmit()
     {
-        #region Unsupported
         // This does work, but is unsupported in Blazor
-        var user = await _userManager.FindByNameAsync(Input.Email);
-
-        if (user == null)
+        var user = _editContext.Validate() && await ServerValidate(_editContext);
+        if (!user)
         {
-            //ShowError(1);
+            // invalid user supplied;
             return;
         }
-
-        var result = await _userManager.CheckPasswordAsync(user, Input.Password);
-        if (!result)
-        {
-            //ShowError(11);
-            return;
-        }
-
-        //var resultSignIn = await _signInManager.PasswordSignInAsync(user, Input.Password, true, false);
-        #endregion
-
         #region Interop
+        // This action never reports failure, so that is why it didn't go into ServerValidate.
         var fields = new
         {
             __RequestVerificationToken = AntiForgeryToken
-        , email = Input.Email,
+        ,
+            email = Input.Email,
             password = Input.Password,
             remember = Input.RememberMe,
             returnurl = "/SignIn"
@@ -141,6 +138,7 @@
 
     public void InvalidSubmit()
     {
+        _editContext = new EditContext(Input);
         return;
     }
 
@@ -149,10 +147,10 @@
         navman.NavigateTo("/");
     }
 
-    // Methods called from Razor code must return an object.  
+    // Methods called from Razor code must return an object.
 
     /// <summary>
-    /// Methods called from Razor code must return an object, so Cancel() can't be used.  
+    /// Methods called from Razor code must return an object, so Cancel() can't be used.
     /// So there is Home() instead, and it calls Cancel()
     /// </summary>
     /// <returns></returns>
@@ -160,5 +158,41 @@
     {
         Cancel();
         return string.Empty;
+    }
+
+    /// <summary>
+    /// Runs a series of test on the server and returns pass fail.
+    /// </summary>
+    /// <param name="editContext"></param>
+    /// <returns></returns>
+    private async Task<bool> ServerValidate(EditContext editContext)
+    {
+        // local property of the model
+        var input = (InputModel)editContext.Model;
+
+        // local error store
+        var validationErrors = new ValidationMessageStore(editContext);
+
+        // First test
+        var user = await _userManager.FindByNameAsync(Input.Email);
+        if (user == null)
+        {
+            var field = new FieldIdentifier(input, nameof(Input.Email));
+            validationErrors.Add(field, "User name does not exist, try again");
+            editContext.NotifyValidationStateChanged();
+            return false;
+        }
+
+        //Second test
+        var result = await _userManager.CheckPasswordAsync(user, Input.Password);
+        if (!result)
+        {
+            var field = new FieldIdentifier(input, nameof(Input.Email));
+            validationErrors.Add(field, "Password incorrect");
+            editContext.NotifyValidationStateChanged();
+            return false;
+        }
+
+        return true;
     }
 }

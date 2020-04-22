@@ -425,3 +425,5 @@ Now that it is confirmed upon hitting this page, present SignIn so that they can
 * Put SignIn `<EditForm >` inside a '`<AuthorizeView>` so it is only displayed when unauthed.
 * Utilized EditContext to test and report server errors.  It is good, but after displaying an error, 
 it is stuck on the error.  Had to reset the EditContext inside `InvalidSubmit` sinc that seems to be the only thing active.
+* Added ClearErrors button and method to reinit EditContext.  Must be an eventhandler somewhere to tap into.  But, you know... Docs!
+ 

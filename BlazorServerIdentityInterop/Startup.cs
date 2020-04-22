@@ -10,6 +10,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using BlazorServerIdentityInterop.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace BlazorServerIdentityInterop
 {
@@ -47,6 +48,11 @@ namespace BlazorServerIdentityInterop
 
             app.UseHttpsRedirection();
             app.UseStaticFiles();
+            using (var serviceScope = app.ApplicationServices.GetService<IServiceScopeFactory>().CreateScope())
+            {
+                var context = serviceScope.ServiceProvider.GetRequiredService<BlazorServerIdentityInteropContext>();
+                context.Database.Migrate();
+            }
 
             app.UseRouting();
             app.UseAuthentication();

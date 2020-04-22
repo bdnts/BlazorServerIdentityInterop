@@ -361,3 +361,10 @@ For educational purpose, saved *SignUp.razor* in original state to see the trans
 * Removed the PageModel
 * Commit
 
+### Convert to an EditForm
+* EditForm are new for Blazor.
+* Make the changes
+* Remove `Model` from the External Logins
+* Commit
+
+

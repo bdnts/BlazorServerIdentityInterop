@@ -343,16 +343,16 @@ SignIn is the most difficult flow, so lets start there.  We will begin with supp
 This project is about getting Blazor working with MS Identity for Educational, POC, or other non-Productional Quality activity, we can live with using `UserManager` for the rest of the Identity pages, unless `SignInManager` is involved.
 We can build the rest by merger the Razor pages into Blazor Components.
 
-## SignUp.razor
+### SignUp.razor
 This is the replacement for the Registration set of pages.
 * Create the file
 * Copy the contents of *Register.cshtml* into the file
 * Copy the contents of *Register.cshtml.cs* into the file.
 
-### Commit SignUp.razor
+#### Commit SignUp.razor
 For educational purpose, saved *SignUp.razor* in original state to see the transformation.
 
-### Converting to a Blazor Component
+#### Converting to a Blazor Component
 * The general flow is to move blocks of code around and transform the form into an EditForm
 * Put a page name on
 * Moved all the libraries to the top
@@ -361,10 +361,55 @@ For educational purpose, saved *SignUp.razor* in original state to see the trans
 * Removed the PageModel
 * Commit
 
-### Convert to an EditForm
+#### Convert to an EditForm
 * EditForm are new for Blazor.
 * Make the changes
 * Remove `Model` from the External Logins
 * Commit
 
+#### Convert the @code\{\} block
+* Convert all the DI properties into @inject
+* Right click on the page and use `Format Selection` to straighten out indention.
+* Remove remaining DI material in constructor.
+* The `[BindProperty]` attribute is unnecessary.
+* Comment out `OnGetOnAsync()` method
+* Convert
+`    public async Task<IActionResult> OnPostAsync(string returnUrl = null)`
+to 
+`    public async void ValidSubmit()`
+* The logic gets inverted from the template, which is if successful, continue.
+The new logic is If error, exit, otherwise continue.
+* See *SignUp.razor* for remaining details
+
+#### Notes
+* The Model designation in Editform should be without an @  
+`<EditForm Model="Input" OnValidSubmit="@ValidSubmit" OnInvalidSubmit="@InvalidSubmit">`  
+Otherwise, an error message about "...can be Model or EditContext, but not both" appears
+* *RegisterConfirmation.cshtml* usually handles displaying the confirmation.  That has been absorbed into this SignUp.
+* A target for the confirmation needs to be specified.  That will be *SignUpConfirmEmail.razor**
+* QueryHelpers is a Microsoft extension for building URLs with query string parameters.  Very helpful.
+* Need better error reporting for condistions of Form=ok, but processing error.  For example, enrolling the same email twice. 
+The solution I use involves a `ServerSideValidator` and multiple lists inside a dictionary.  Got to be a simpler way..
+
+### NavigationManagerExtensions
+Extensions provide a way to extend a class, especially a sealed one like NavigationManager.
+Chris Sainty has provided a neat extension around querystrings and NavigationManager.  It has been added the Extensions folder.
+
+### SignUpConfirmEmail.razor
+* Implement the page from the repo
+* The `<SignIn />` component has been embedded.  User can't sign in until email confirmation.  
+Now that it is confirmed upon hitting this page, present SignIn so that they can.
+* Thanks to Chris Sainty and his blog for info about query strings (https://chrissainty.com/working-with-query-strings-in-blazor/)
+* 
+#### Test it
+* Sign up a new user
+* Confirm their email
+* Sign In
+
+### Commit to Repo Base 00.03.02
+* Completed transformation of *SignUp.razor*
+  * Kept Confirmation generation inside.  No conversion of *RegisterConfirmation* necessary.
+* Added *SignUpConfirmEmail.razor* as a target for confirmation url.
+* Added *NavigationManagerExtensions.cs* for an extension class to Navigation Manager
+* 
 

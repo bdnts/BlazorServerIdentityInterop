@@ -337,3 +337,18 @@ SignIn is the most difficult flow, so lets start there.  We will begin with supp
 
 ### Commit to Repo Base 00.03.01
 
+## The Rest
+`SignInManager` does *NOT* work in Blazor.  
+`UserManager` works, but is not supported.  
+This project is about getting Blazor working with MS Identity for Educational, POC, or other non-Productional Quality activity, we can live with using `UserManager` for the rest of the Identity pages, unless `SignInManager` is involved.
+We can build the rest by merger the Razor pages into Blazor Components.
+
+## SignUp.razor
+This is the replacement for the Registration set of pages.
+* Create the file
+* Copy the contents of *Register.cshtml* into the file
+* Copy the contents of *Register.cshtml.cs* into the file.
+
+### Commit SignUp.razor
+For educational purpose, saved *SignUp.razor* in original state to see the transformation.
+

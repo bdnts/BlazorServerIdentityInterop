@@ -416,4 +416,7 @@ Now that it is confirmed upon hitting this page, present SignIn so that they can
 * Lined up the box for SignUp
 * Added SignalR to package for Azure dependency.
 
-
+### Commit to Repo Base 00.03.04
+* Some beautification
+* Added self-migrate for SqlIte
+* Updated all packages.

@@ -32,25 +32,43 @@
             <ValidationSummary />
             <h4>Create a new account.</h4>
             <hr />
-            <div class="form-group">
-                <label>
-                    Email"
-                    <InputText @bind-Value="Input.Email" />
-                </label>
+            <div class="container px-1" style="width: 75%; margin-left: 75px;">
+                <div class="form-group row">
+                    <div class="col text-right">
+                        <label>
+                            Email
+                            <InputText @bind-Value="Input.Email" />
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col text-right">
+                        <label>
+                            Password
+                            <InputText type="password" @bind-Value="Input.Password" />
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col text-right">
+                        <label>
+                            Confirm Password
+                            <InputText type="password" @bind-Value="Input.ConfirmPassword" />
+                        </label>
+                    </div>
+                </div>
+
             </div>
-            <div class="form-group">
-                <label>
-                    Password
-                    <InputText type="password" @bind-Value="Input.Password" />
-                </label>
+            <div class="row">
+                <div class="col text-right">
+                    <button type="submit" class="btn btn-primary">Sign Up</button>
+                </div>
+                <div class="col text-left">
+                    <button type="button" class="btn btn-danger" @onclick="Cancel">Cancel</button>
+                </div>
+
             </div>
-            <div class="form-group">
-                <label>
-                    ConfirmPassword
-                    <InputText type="password" @bind-Value="Input.ConfirmPassword" />
-                </label>
-            </div>
-            <button type="submit" class="btn btn-primary">Sign Up</button>
+
         </EditForm>
     </div>
     <div class="col-md-6 col-md-offset-2">
@@ -187,4 +205,10 @@
     {
         return;
     }
+
+    public void Cancel()
+    {
+        _navman.NavigateTo("/");
+    }
+
 }

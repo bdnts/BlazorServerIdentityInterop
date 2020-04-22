@@ -411,5 +411,9 @@ Now that it is confirmed upon hitting this page, present SignIn so that they can
   * Kept Confirmation generation inside.  No conversion of *RegisterConfirmation* necessary.
 * Added *SignUpConfirmEmail.razor* as a target for confirmation url.
 * Added *NavigationManagerExtensions.cs* for an extension class to Navigation Manager
-* 
+
+### Commit to Repo Base 00.03.03
+* Lined up the box for SignUp
+* Added SignalR to package for Azure dependency.
+
 

@@ -426,4 +426,10 @@ Now that it is confirmed upon hitting this page, present SignIn so that they can
 * Utilized EditContext to test and report server errors.  It is good, but after displaying an error, 
 it is stuck on the error.  Had to reset the EditContext inside `InvalidSubmit` sinc that seems to be the only thing active.
 * Added ClearErrors button and method to reinit EditContext.  Must be an eventhandler somewhere to tap into.  But, you know... Docs!
- 
+
+### Commit Base 00.03.06
+* Added *ServerSideValidator* component to process server validation.  
+Inside of `OnValidSubmit()` tests can be run, and if failed, messages placed inside `ServerSideValidator()` for eventual display.
+This pattern doesn't suffer from the problems in `SignIn()` No need for a *Clear Error* button.
+One little bit of wonkyness is figuring out which field had the problem.
+* Cleaned up the UI a little to make it presentable on a mobile.

@@ -433,3 +433,69 @@ Inside of `OnValidSubmit()` tests can be run, and if failed, messages placed ins
 This pattern doesn't suffer from the problems in `SignIn()` No need for a *Clear Error* button.
 One little bit of wonkyness is figuring out which field had the problem.
 * Cleaned up the UI a little to make it presentable on a mobile.
+
+### Commit Base 0.04.00 A Big Tweak
+I've been working on a different approach using the `RevalidatingIdentityAuthenticationSerivceProvider` class  that comes will you add add Identity during project creation creation.
+(See project BlazorIdentityRIASP) It works, just like every other solution right up until getting the Identity cookie.
+There just really isnt' getting around using SignInManager to populate HttpContext for MS Identity to work.
+But HttpContext is frozen in Blazor and unmodifyable.  
+So I started doing some experimenting with PostMan calling Login, against this project, and it work.
+Most importantly the .AspNetCore.Identity.Application cookie was available.
+Further, I found some SO answers showing how to generate a cookie during Startup.  
+Lastly, some Microsoft docs referencing if you really must use HttpContext, access it in the startup `_Host.cshtml` file and cascde it down through Blazor.
+
+So I did the following:
+* Changed `Startup.cs` to define the anti-forgery cookie, then accessed it in my code.  This went well.
+* Changed _Host.cshtml to save the anti-forger cookie ito the DOM in a diffent way.
+* Made calls to Identity/Account/Login passing the token.  This didn't go so well, kept missing the XSRF-TOKEN header.
+* I eventually found RestSharp, and it made the creating the request much easier.
+  * I read a lot of debate about the pros and cons of RestSharp.
+    My interest is Blazor Local Identity without resorting to Razor Pages, bolting 3rd party products on system, and having UX as good as Asp.Net MVC Identity.
+    A bit obsessive, but I have my reasons.  RestSharp solved a problem to help me get to my goal.  
+    It is an issue to mopped up at a later date.
+* And then I figured out how to save the authentication cookie into the Browser.
+  * I asked a lot of people about how to do this, as this was a problem with most solutions, and no good answers.
+  * Turns out the file `interop.js` from Oqtane had the solution all along `setcookie()`.
+* Finally, I always knew that the anti-forgery token came on the initial GET for the Login form, in a hidden field.
+  But using Fiddler (Oh how I miss my days of WireSharking wire protocols! Programming in Lua.  Yes!),
+  to watch a Razor page Login cycle, I could see the same value was in the XSRF-TOKEN header in the GET response.
+  * I built a GET against the Login Razor page, pulled out the XSRF-TOKEN, and then used that in my POST to Login with credentials.
+  * This allowed me to comply with anti-forgery, pass credentials, get the authentication token back, and insert into the browser storage.
+* This version contains all the prior work, plus all the new work.  Then in the next version, I'll cut things back to just the working code.
+
+* *Startup.cs*
+    * Added a bunch of packages.  I'll prune all this back next tag
+    * Defined my AntiForgery Header and Form Field names
+    * Added HttpClient
+    * Append the XSRF-TOKEN to HttpContext BEFORE Blazor space.  It is mutable at this point
+* *appsettings.json* *appsettings.Development.json*
+  * Set everything to `Trace`  This was a big help when trying to identify what was going wrong where.
+  Leaving this in just for reference purposes.
+* *_Host.cshtml*  _Tomayto_ or _Tomotto__
+  * In the Oqtane solution, `HTML.AntiForgeryToken()` is called to insert a token element that can be retrieved later.
+  * I found MS guidance that for Blazor, you should inject the IAntiforgery service, create a function to retrieve a token and then set it to a hidden field.
+  * I've got both approaches going, and while they produce different values for the token, they both seem to work.  I can't see if one is superior the other besides brevity.
+* *Index.razor*
+  * Added an extra page attribute for `/Index` as the system was having problems with `/`
+*BlazorServerIdentityInterop.csproj*
+  * **Optional** - Added the RestSharp package.  If you can call Razor Login using HttpClient, great.
+  * I put the RetSharp compiler directive around the code to easily turn it off and on.
+*SignIn.razor*
+    * Added a bunch of new packages.  Will prune back later.
+    * Added a HttpClientFactory
+    * Added token for the Oqtane token, and xsrfcookie for XSRF-TOKEN.
+    * Added xsrf to InputModel to serialize the whole structure.
+    * Added property OnGetResponse to hold the respone to an HttpClient call
+    * Commented out retrieval of the Oqtane token by element name.
+    * Compiler directives to isolate the Oqtane/Interop & RestSharp code from everythign else.
+    * Added a RestSharp section.
+      * Originally was getting the anti-forgery token from DOM with GetElementByName.  
+        But with better understanding, I realized what I needed was the Login form from a GET call.
+        It had everything I needed in the right form.  I switched over to the new code where I populate the postRequest with data from the getResponse.
+      * Then there is a postRequest sent.
+        * From the response, I extract the `.AspNetCore.Identity.Application` cookie and then add it the DOM.
+          * I use the SetCookie method provided by the `interop.js*  This reduces my javascript calls to 1.
+      * `NavigateTo("/Index", true)` is crucial to force the browser to route through the server and pick up the authentication cookie.
+        Without this step, the browser will never reflect the user is authenticated. 
+*serviceDependencies.json* *serviceDepenencies.local.json*
+* Didn't notice these until now.  I suspect RestSharp added them.  Don't know.

@@ -17,7 +17,16 @@
 </head>
 <body>
     @(Html.AntiForgeryToken())
+    Token=@Html.AntiForgeryToken()
+    @inject Microsoft.AspNetCore.Antiforgery.IAntiforgery XSrf
+    @functions{
+        public string GetAntiXsrfRequestToken()
+        {
+            return XSrf.GetAndStoreTokens(HttpContext).RequestToken;
+        }
+    }
     <app>
+        <input type="hidden" id="BDToken" name="BDrvt" value="@GetAntiXsrfRequestToken()" />
         <component type="typeof(App)" render-mode="ServerPrerendered" />
     </app>
 

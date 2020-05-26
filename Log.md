@@ -500,7 +500,7 @@ So I did the following:
 *serviceDependencies.json* *serviceDepenencies.local.json*
 * Didn't notice these until now.  I suspect RestSharp added them.  Don't know.
 
-### Base 00.05.00 Reduction
+### Base 00.04.01 Reduction
 *Eliminating all the files not needed with the current approach
 *Adding all the files that would be present without scaffolding
 

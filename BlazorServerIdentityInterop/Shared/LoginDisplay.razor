@@ -11,9 +11,11 @@
     </NotAuthorized>
     <Authorized>
         <a href="Identity/Account/Manage">Hello, @context.User.Identity.Name!</a>
-        <NavLink class="nav-link" href="SignOut">
-            <span class="oi oi-account-logout" aria-hidden="true"></span> Sign Out
-        </NavLink>
+        <form method="post" action="Identity/Account/LogOut">
+            <button type="submit" class="nav-link btn btn-link ">
+                <span class="oi oi-account-logout" aria-hidden="true"></span> Sign Out
+            </button>
+        </form>
         <form method="post" action="Identity/Account/LogOut">
             <button type="submit" style="color:red" class="nav-link btn btn-link ">Log out</button>
         </form>

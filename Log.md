@@ -467,3 +467,59 @@ So I did the following:
 
 ### Base 00.04.02 Log.md
 Moved the logs out of Readme.md so it can be big picture and this little picture
+
+### Base 00.04.03 SUSO changes
+#### Functional changes
+##### SignUp Flow
+###### SignUp.razor
+* Markup file
+###### SignUp.razor.cs
+* Code behind file
+###### SignUpEmailConfirmed.razor
+* Called by confirmation link and confirms an email address
+##### SignIn.razor
+* Removed deprecated code
+* Added commentary
+##### Startup.cs
+* Added new packages
+* Removed deprecated
+* Added DBContext to match with template project
+* Added ASP
+* Removed creating serviceScope
+##### BlazorServerIdentityInterop.csproj
+* Removed deprecated functionality
+
+#### UI Changes
+##### Index.razor
+* Added an AuthorizeView to demonstrate A&A working
+##### LoginDisplay.razor
+* Tweaked the Sign Out display link
+##### MainLayout.razor
+* Tweaked display
+
+#### Clean up
+##### _Host.cshtml
+* Removed all code that inserts AF token into DOM.  Not necessary if getting the AF token from OnGet() 
+##### interop.js & interop.cs
+* Reduced to minimum required
+##### ServerSideValidator.cs
+* Moved from Identity to mainline to make available anywhere
+##### NavigationManagerExtensions & IdentityExtensions.cs
+* Replaced with IdentityExentions.cs 
+
+#### Miscellaneous
+##### App.razor
+* Changed to `AuthorizeRouteView`
+##### _Imports.razor
+* Added Components folder
+##### appsettings.json
+* Changed the DBConnect to the template version
+* Turned off Console logging
+##### serviceDependencies.json & local.json
+* Switched over to mssql1
+* 
+#### Documentation
+##### Images
+* Added new images to document the replication steps.
+##### Log.md
+* Base 00.04.03

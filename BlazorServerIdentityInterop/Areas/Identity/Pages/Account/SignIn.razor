@@ -1,24 +1,13 @@
 ﻿@page "/SignIn"
 @using System.ComponentModel.DataAnnotations;
-@using System.Net.Http.Headers;
-@using System.Text.Json;
-@using System.Text.Json.Serialization;
-
-@using Microsoft.AspNetCore.Authentication.Cookies;
-@using Microsoft.AspNetCore.Antiforgery;
 @using Microsoft.AspNetCore.Identity;
 @using Microsoft.JSInterop;
-@using BlazorServerIdentityInterop.Areas.Identity.Data;
 
 @using RestSharp;
-@using RestSharp.Authenticators;
-
 
 @inject NavigationManager navman;
-@inject UserManager<BlazorServerIdentityInteropUser> _userManager
+@inject UserManager<IdentityUser> _userManager
 @inject IJSRuntime _jsruntime;
-@inject IHttpClientFactory _clientFactory;
-@inject IAntiforgery Xsrf;
 
 <AuthorizeView>
     <NotAuthorized Context="NotAuthed">
@@ -72,16 +61,12 @@
             </EditForm>
         </div>
     </NotAuthorized>
-    <Authorized Context="Authed">
-        @Home()
-    </Authorized>
 </AuthorizeView>
 
 @code {
     [CascadingParameter] public Task<AuthenticationState> authenticationStateTask { get; set; }
-    private string AntiForgeryToken { get; set; }
-    private string token { get; set; }
-    private string xsrfcookie { get; set; }
+
+    // This should have gone in the Data folder, but being helps with clarity.
     public class InputModel
     {
         [Required] // @using System.ComponentModel.DataAnnotations;
@@ -94,19 +79,15 @@
 
         [Display(Name = "Remember me?")]
         public bool RememberMe { get; set; }
-        [JsonPropertyName("XSRF-CSRF-TOKEN-FORM")]
-        public string xsrf { get; set; }
     }
 
     private InputModel Input = new InputModel();
 
     private EditContext _editContext;
 
-    private bool isSubmitButtonDisabled { get; set;  }
+    private bool isSubmitButtonDisabled { get; set; }
 
     private bool showClearErrors { get; set; }
-
-    public HttpResponseMessage OnGetResponse { get; set; } = new HttpResponseMessage();
 
     protected override void OnInitialized()
     {
@@ -114,23 +95,9 @@
         _editContext = new EditContext(Input);
     }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            #region Interop
-            var interop = new Interop(_jsruntime);
-            //AntiForgeryToken = await interop.GetElementByName("__RequestVerificationToken");
-            #endregion
-        }
-
-        await base.OnAfterRenderAsync(firstRender);
-        return;
-    }
-
     public async void ValidSubmit()
     {
-        // This does work, but is unsupported in Blazor
+        //Validate the data from form
         var user = _editContext.Validate() && await ServerValidate(_editContext);
         if (!user)
         {
@@ -140,62 +107,44 @@
             return;
         }
 
-#if Interop
-        // This action never reports failure, so that is why it didn't go into ServerValidate.
-        var fields = new
-        {
-        __RequestVerificationToken = AntiForgeryToken
-        ,
-        email = Input.Email,
-        password = Input.Password,
-        remember = Input.RememberMe,
-        returnurl = "/SignIn"
-        };
-        var interop = new Interop(_jsruntime);
-        await interop.SubmitForm("Identity/Account/Login", fields);
-        HttpResponseMessage response = new HttpResponseMessage();
-
-        if (!response.IsSuccessStatusCode)
-        {
-        return;
-        }
-#endif
-
-#if RestSharp
         // First get the form containing tokens
         string uri = navman.BaseUri + $"Identity/Account/Login?Email=" + Input.Email + "&Password=" + Input.Password + "&RememberMe=" + Input.RememberMe.ToString();
         var getClient = new RestClient(uri);
         var getRequest = new RestRequest(Method.GET);
         IRestResponse getResponse = getClient.Execute(getRequest);
 
+        // Now start building the POST request
         var getHeaders = getResponse.Headers.ToList();
         var getCookies = getResponse.Cookies.ToList();
         var antiCookie = getCookies.Find(x => x.Name.StartsWith(".AspNetCore.Antiforgery."));
         var xsrfCookie = getCookies.Find(x => x.Name.Equals("XSRF-TOKEN"));
-        //Set up
-        //var interop = new Interop(_jsruntime);
-        //var xscookie = await interop.GetElementByName("BDrvt");
 
+        // Start building the client
         var postClient = new RestClient(uri);
-        //postClient.Authenticator = new HttpBasicAuthenticator(Input.Email, Input.Password);
-
         var postRequest = new RestRequest(Method.POST);
-        //postRequest.AddHeader("X-CSRF-TOKEN-HEADER", xsrfcookie);
         postRequest.AddHeader("X-CSRF-TOKEN-HEADER", xsrfCookie.Value);
-        //request.AddHeader("Authorization", "Basic dGVzdDAxQGVtYWlsOlRpZ2VyMTIzIQ==");
-        //postRequest.AddHeader("Cookie", ".AspNetCore.Antiforgery.ulueaY49otY=xscookie");
         postRequest.AddCookie(antiCookie.Name, antiCookie.Value);
         postRequest.AddCookie("XSRF-TOKEN", xsrfCookie.Value);
+
+        // Execute the request
         IRestResponse response = postClient.Execute(postRequest);
         if (!response.IsSuccessful)
+        {
+            showClearErrors = true;
+            isSubmitButtonDisabled = true;
             return;
-        var authCookie = response.Cookies.ToList().Find(x => x.Name.Equals(".AspNetCore.Identity.Application"));
-        var blazorJSR = new Interop(_jsruntime);
+        }
 
+        // Extract the cookie
+        var authCookie = response.Cookies.ToList().Find(x => x.Name.Equals(".AspNetCore.Identity.Application"));
+
+        // Set the cookie in the browser
+        var blazorJSR = new Interop(_jsruntime);
         await blazorJSR.SetCookie(authCookie.Name, authCookie.Value, 14);
-        /// Check out response
-        navman.NavigateTo("/Index", true);
-#endif
+
+        // Navigate away to force the cookie into browser.
+
+        navman.NavigateTo("/", true);
     }
 
     public void InvalidSubmit()
@@ -214,19 +163,6 @@
     public void Cancel()
     {
         navman.NavigateTo("/Index");
-    }
-
-    // Methods called from Razor code must return an object.
-
-    /// <summary>
-    /// Methods called from Razor code must return an object, so Cancel() can't be used.
-    /// So there is Home() instead, and it calls Cancel()
-    /// </summary>
-    /// <returns></returns>
-    public string Home()
-    {
-        Cancel();
-        return string.Empty;
     }
 
     /// <summary>

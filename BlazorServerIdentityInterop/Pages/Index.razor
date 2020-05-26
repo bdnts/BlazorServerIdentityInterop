@@ -1,8 +1,16 @@
 ﻿@page "/"
-@page "/Index"
 
 <h1>Hello, world!</h1>
 
 Welcome to your new app.
 
 <SurveyPrompt Title="How is Blazor working for you?" />
+
+<AuthorizeView>
+    <Authorized>
+        <h2>User @context.User.Identity.Name is authenticated</h2>
+    </Authorized>
+    <NotAuthorized>
+        <h5>No one authorized</h5>
+    </NotAuthorized>
+</AuthorizeView>

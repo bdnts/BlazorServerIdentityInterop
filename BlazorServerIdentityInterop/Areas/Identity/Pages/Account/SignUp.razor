@@ -1,0 +1,98 @@
+﻿@page "/SignUp"
+
+    <AuthorizeView>
+        <NotAuthorized Context="NotAuthed">
+            @if (showSignUp)
+            {
+                <h1 class="text-center">Sign Up</h1>
+                <hr />
+                <div class="container px-1" style="width: 100%; margin-left: 75px;">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h4 class="text-center">Create a new account.</h4>
+                            <hr />
+                            <EditForm Model="@input" OnInvalidSubmit="@InvalidSubmit" OnValidSubmit="@ValidSubmit">
+                                <DataAnnotationsValidator />
+                                <ServerSideValidator @ref="serverSideValidator" />
+                                <section>
+                                    <div class="container text-center" style="padding-right: 30%;">
+                                        <div class="form-group row text-right">
+                                            <div class="col">
+                                                <label>
+                                                    Email
+                                                    <InputText @bind-Value="input.Email" />
+                                                </label>
+                                                <ValidationMessage For="@(() => input.Email)" />
+                                            </div>
+                                        </div>
+                                        <div class="form-group row text-right">
+                                            <div class="col">
+                                                <label>
+                                                    Password
+                                                    <InputText type="password" @bind-Value="input.Password" />
+                                                </label>
+                                                <ValidationMessage For="@(() => input.Password)" />
+                                            </div>
+                                        </div>
+                                        <div class="form-group row text-right">
+                                            <div class="col">
+                                                <label>
+                                                    Confirm Password
+                                                    <InputText class="mycontainer-inputsize" Id="ConfirmPassword" type="password" @bind-Value="input.ConfirmPassword" Width="100%" />
+                                                </label>
+                                                <ValidationMessage For="@(() => input.ConfirmPassword)" />
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                    <div class="form-group row text-center">
+                                        <div class="col text-right">
+                                            <button type="submit" class="btn btn-primary" Enabled="true">Sign Up</button>
+                                        </div>
+                                        <div class="col text-left">
+                                            <button type="button" class="btn btn-danger" @onclick="Cancel">Cancel</button>
+                                        </div>
+                                    </div>
+                                </section>
+                            </EditForm>
+                        </div>
+                        <div class="col-md-4 col-md-offset-2">
+                            <section>
+                                <h4>Use another service to sign up.</h4>
+                                <hr />
+                                @{
+                                    //if ((Model.ExternalLogins?.Count ?? 0) == 0)
+                                    if (true)
+                                    {
+                                        <div>
+                                            <p>
+                                                There are no external authentication services configured. See <a href="https://go.microsoft.com/fwlink/?LinkID=532715">this article</a>
+                                                for details on setting up this ASP.NET application to support signing up via external services.
+                                            </p>
+                                        </div>
+                                    }
+                                }
+                            </section>
+                        </div>
+
+                    </div>
+                </div>
+            }
+        </NotAuthorized>
+        <Authorized>
+            <h2>Sign Out before Signing Up again</h2>
+        </Authorized>
+    </AuthorizeView>
+
+@if (showConfirmation)
+{
+    <div class="container">
+        <h3>
+            This app does not currently have a real email sender registered, see <a href="https://aka.ms/aspaccountconf">these docs</a>
+            for how to configure a real email sender.
+            Normally this would be emailed:<br />
+            <a id="confirm-link" href="@EmailConfirmationUrl">Click here to confirm your account</a>
+        </h3>
+    </div>
+}
+

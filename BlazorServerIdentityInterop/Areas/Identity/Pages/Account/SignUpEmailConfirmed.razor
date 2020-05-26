@@ -1,0 +1,86 @@
+﻿@page "/SignUpEmailConfirmed"
+
+@using System.Text;
+@using Microsoft.Extensions.Logging;
+@using Microsoft.AspNetCore.Identity;
+@using Microsoft.AspNetCore.WebUtilities;
+@using BlazorServerIdentityInterop.Areas.Identity.Extensions;
+
+@inject NavigationManager navman;
+@inject ILogger<SignUpEmailConfirmed> _logger;
+@inject UserManager<IdentityUser> userManager;
+
+@if (!string.IsNullOrEmpty(StatusMessage))
+{
+    <div class="container"  >
+        <h3 class="text-center">@StatusMessage</h3>
+        @if (showSignIn)
+        {
+            <p class="text-center"><button type="button" class="btn btn-primary" @onclick="LSignIn">Sign In</button></p>
+        }
+    </div>
+}
+
+@****************************************************************************@
+@code {
+    public string userId;
+    public string code;
+    public string StatusMessage { get; set; }
+    public bool showSignIn { get; set; }
+
+    //TODO: Protect the userId and token code
+    // Only so many minutes in the day to slay dragons.
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            navman.TryGetQueryString<string>("userId", out userId);
+            navman.TryGetQueryString<string>("code", out code);
+            await Run();
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+        return;
+    }
+
+    // Why do I put code in it's own method instead of inline of OnAfterRenderAsync/
+    // Because maybe OnParamsSet or OnInitialized would be better.  This way I can just move the call instead of the code.
+    // Performance?  Maintenance is always more expensive than performance.
+    private async Task Run()
+    {
+        if (string.IsNullOrEmpty(userId))
+        {
+            StatusMessage = "Invalid User Id";
+            StateHasChanged();
+            return;
+        }
+
+        var token = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(code));
+
+        var user = await userManager.FindByIdAsync(userId);
+        if (user == null)
+        {
+            var Ex = new NullReferenceException("Could not find userId={0:userId}");
+            throw Ex;
+        }
+
+        var result = await userManager.ConfirmEmailAsync(user, token);
+        if (!result.Succeeded)
+        {
+            StatusMessage = "Error: " + result.Errors.ToList()[0].Code + ":" + result.Errors.ToList()[0].Description;
+            StateHasChanged();
+            return;
+        }
+
+        var User =  await userManager.FindByIdAsync(userId);
+
+        StatusMessage = "Thank you " + user.UserName + " for confirming your email. Please Sign In to complete your profile.";
+        showSignIn = true;
+        StateHasChanged();
+    }
+
+    public void LSignIn()
+    {
+        navman.NavigateTo("/SignIn");
+    }
+}

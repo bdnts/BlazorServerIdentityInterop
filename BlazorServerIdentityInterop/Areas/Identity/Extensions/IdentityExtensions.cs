@@ -1,14 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.WebUtilities;
 
-namespace BlazorServerIdentityInterop.Extensions
+namespace BlazorServerIdentityInterop.Areas.Identity.Extensions
 {
-    public static class NavigationManagerExtensions
+    public static class IdentityExtensions
     {
+        // Courtesy Chris Sainty
+        #region NavigationManager
         public static bool TryGetQueryString<T>(this NavigationManager navManager, string key, out T value)
         {
             var uri = navManager.ToAbsoluteUri(navManager.Uri);
@@ -37,5 +35,8 @@ namespace BlazorServerIdentityInterop.Extensions
             value = default;
             return false;
         }
+        #endregion
     }
 }
+
+

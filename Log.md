@@ -523,3 +523,25 @@ Moved the logs out of Readme.md so it can be big picture and this little picture
 * Added new images to document the replication steps.
 ##### Log.md
 * Base 00.04.03
+
+## V02.00.00 
+
+### V02.00.01
+* Ran into problem after published to Azure, added Microsoft.Extensions.Logging.AzureAppServices to get logging.
+* Logs inidcated database hadn't been updated.
+* Needed a local connection string to run migratio against Azure Sql database.
+* Once I got through that, a firewall prevented connectivity.
+* Once FW configured, connected to database, performed migration and application launched.
+* Success.
+* Put the Azure connection string in Secrets.json, and remove from appsettings.json.
+  Testing successful.
+#### appsettings.json
+* Webdeploy added a section on Azure
+#### serviceDependencies.json
+* Added by webdeploy
+#### serviceDependecies.json & serviceDependencies.local.json
+* Webdeploy added more nodes
+#### BlazorServerIdentityInterop.csproj
+* SignalR and AzureAppServices logging added.
+#### Program.cs
+Added AddAzureWebApplicationDiagnostics

@@ -3,6 +3,13 @@
     "mssql1": {
       "type": "mssql",
       "connectionId": "DefaultConnection"
+    },
+    "signalr1": {
+      "type": "signalr",
+      "connectionId": "Azure__SignalR__ConnectionString"
+    },
+    "secrets1": {
+      "type": "secrets"
     }
   }
 }
